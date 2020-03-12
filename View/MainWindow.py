@@ -49,7 +49,7 @@ class MainWindow(QMainWindow):
         self.openAction.setShortcut("Ctrl+O")
         self.openAction.setStatusTip('Open')
         self.openAction.triggered.connect(self.mainGUI.openFile)
-        self.openAction.setIcon(QIcon(resource_path("resource/about-icon.png")))
+        self.openAction.setIcon(QIcon(resource_path("resource/open-icon.png")))
 
         self.statusBar()
 
@@ -184,11 +184,8 @@ class MainGui(QWidget):
         print("close event")
         print("closed")
 
-    def noSteamPath(self):
-        self.errorDialog("No Steam Path", "No Steam.exe path ! \nUse Tools->Change Steam path (Ctrl+C)")
-
-    def noAccountsFound(self):
-        self.errorDialog("No account(s) registered !", "No account(s) registered ! \nUse Tools->Add Account (Ctrl+A)")
+    def errorMSG(self):
+        self.errorDialog("Error !", "Error")
 
     def errorDialog(self, title, message):
         msg = QMessageBox(self)
