@@ -1,10 +1,8 @@
-import DICOM_Reader
+from Model import DICOM_Reader
 import numpy as np
 from scipy import ndimage
 from scipy.signal import hilbert
 import cv2
-import scipy.misc
-
 
 
 def detect_Bline(img):

@@ -5,12 +5,12 @@ import sys
 import ctypes
 from pathlib import Path
 
-import DICOM_Reader
+from Model import DICOM_Reader
 
 # Import the core and GUI elements of Qt
-from PyQt5.QtCore import QSize, pyqtSignal, pyqtSlot,Qt
+from PyQt5.QtCore import QSize, pyqtSignal, pyqtSlot
 from PyQt5.QtGui import QIcon, QPixmap, QImage
-from PyQt5.QtWidgets import QMainWindow, QAction, QWidget, QVBoxLayout, QPushButton, QComboBox, QMessageBox, QLabel, \
+from PyQt5.QtWidgets import QMainWindow, QAction, QWidget, QVBoxLayout, QPushButton, QMessageBox, QLabel, \
     QApplication, QFileDialog,QHBoxLayout, QCheckBox,QGroupBox
 
 # to allow windows icon task bar
