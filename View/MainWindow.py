@@ -11,7 +11,7 @@ from Model import DICOM_Reader
 from PyQt5.QtCore import QSize, pyqtSignal, pyqtSlot
 from PyQt5.QtGui import QIcon, QPixmap, QImage
 from PyQt5.QtWidgets import QMainWindow, QAction, QWidget, QVBoxLayout, QPushButton, QMessageBox, QLabel, \
-    QApplication, QFileDialog,QHBoxLayout, QCheckBox,QGroupBox
+    QApplication, QFileDialog, QHBoxLayout, QCheckBox, QGroupBox, QTreeWidget
 
 # to allow windows icon task bar
 myappid = 'nath.app.LungBLine'  # arbitrary string
@@ -26,7 +26,8 @@ class MainWindow(QMainWindow):
         self.mainGUI = MainGui(self)
         self.setCentralWidget(self.mainGUI)
 
-        self.setMinimumSize(QSize(800, 600))
+        self.setMinimumSize(QSize(1000, 600))
+        self.setMaximumSize(QSize(1400, 800))
         self.setWindowTitle('Lung BLine')
         self.setWindowIcon(QIcon(resource_path("resource/lung_icon.png")))
 
@@ -90,11 +91,18 @@ class MainGui(QWidget):
 
         # qlabel
         self.label_image = QLabel(self)
+        self.label_image.setPixmap(QPixmap('Resource/no-image-icon.png').scaled(800, 600))
+        self.label_image.setFixedSize(800, 600)
+
         self.label_index_image = QLabel(self)
 
         self.label_nb_line_detected = QLabel("Number of line detected : ")
         self.label_average_line_detected = QLabel("Average line detected : ")
         self.label_percentage_black_white = QLabel("Ratio of black/white : ")
+        self.label_filepath = QLabel("Filepath : ")
+
+        # qtree widget
+        self.qtree_widget = QTreeWidget()
 
         # signal
         self.filePath.connect(self.readDicomFile)
@@ -118,6 +126,7 @@ class MainGui(QWidget):
         self.vlayout_info_label.addWidget(self.label_nb_line_detected)
         self.vlayout_info_label.addWidget(self.label_average_line_detected)
         self.vlayout_info_label.addWidget(self.label_percentage_black_white)
+        self.vlayout_info_label.addWidget(self.label_filepath)
         self.vlayout_info_label.addStretch(0)
         self.qgroup_info.setLayout(self.vlayout_info_label)
 
@@ -131,6 +140,8 @@ class MainGui(QWidget):
         self.hlayout_display.addLayout(self.hlayout_change_buttons)
 
         # gui layout
+        self.hlayout_main.addWidget(self.qtree_widget)
+        self.hlayout_main.addStretch(0)
         self.hlayout_main.addLayout(self.hlayout_display)
         self.hlayout_main.addStretch(0)
         self.hlayout_main.addLayout(self.vlayout_checkbox)
@@ -169,8 +180,8 @@ class MainGui(QWidget):
     @pyqtSlot()
     def prev_image(self):
         if self.image_index > 0:
-            self.image_index -=1
-            self.label_index_image.setText(str(self.image_index)+"/"+str(self.imageArray.shape[0]))
+            self.image_index -= 1
+            self.label_index_image.setText(str(self.image_index) + "/" + str(self.imageArray.shape[0]))
             self.display_image(self.image_index)
 
     @pyqtSlot()

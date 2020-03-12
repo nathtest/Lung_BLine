@@ -76,7 +76,6 @@ if __name__ == "__main__":
     reader.get_dicom_details()
     array_image = reader.extract_images_opencv_dev(False)
 
-
     detect = BLine_detect()
 
     img = detect.fast_denoising(array_image[1])
