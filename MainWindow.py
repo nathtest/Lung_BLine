@@ -8,10 +8,10 @@ from pathlib import Path
 import DICOM_Reader
 
 # Import the core and GUI elements of Qt
-from PyQt5.QtCore import QSize, pyqtSignal, pyqtSlot
+from PyQt5.QtCore import QSize, pyqtSignal, pyqtSlot,Qt
 from PyQt5.QtGui import QIcon, QPixmap, QImage
 from PyQt5.QtWidgets import QMainWindow, QAction, QWidget, QVBoxLayout, QPushButton, QComboBox, QMessageBox, QLabel, \
-    QApplication, QFileDialog,QHBoxLayout
+    QApplication, QFileDialog,QHBoxLayout, QCheckBox,QGroupBox
 
 # to allow windows icon task bar
 myappid = 'nath.app.LungBLine'  # arbitrary string
@@ -28,7 +28,7 @@ class MainWindow(QMainWindow):
 
         self.setMinimumSize(QSize(800, 600))
         self.setWindowTitle('Lung BLine')
-        self.setWindowIcon(QIcon(resource_path("resource/steam-icon.png")))
+        self.setWindowIcon(QIcon(resource_path("resource/lung_icon.png")))
 
         self.closeEvent = self.mainGUI.closeEvent  # close event is handled in mainGUI
 
@@ -73,10 +73,8 @@ class MainGui(QWidget):
         super(MainGui, self).__init__(parent)
 
         # grid layout
-        self.main_vlayout = QVBoxLayout(self)
-        self.setLayout(self.main_vlayout)
-
-
+        self.hlayout_main = QHBoxLayout(self)
+        self.setLayout(self.hlayout_main)
 
         # button
         self.prevButton = QPushButton("Prev")
@@ -84,14 +82,19 @@ class MainGui(QWidget):
         self.nextButton = QPushButton("Next")
         self.nextButton.setDisabled(True)
 
+        # qcheckbox
+        self.qcheckbox_show_filter = QCheckBox("Show B line(s)")
+
+        # qgoup box
+        self.qgroup_info = QGroupBox("Informations")
+
         # qlabel
         self.label_image = QLabel(self)
         self.label_index_image = QLabel(self)
 
-
-        self.qcombobox_account = QComboBox()
-
-
+        self.label_nb_line_detected = QLabel("Number of line detected : ")
+        self.label_average_line_detected = QLabel("Average line detected : ")
+        self.label_percentage_black_white = QLabel("Ratio of black/white : ")
 
         # signal
         self.filePath.connect(self.readDicomFile)
@@ -100,14 +103,37 @@ class MainGui(QWidget):
         self.nextButton.clicked.connect(self.next_image)
 
         # horizontal layout for loading info and go back button
-        self.hbox_info = QHBoxLayout()
-        self.hbox_info.addWidget(self.prevButton)
-        self.hbox_info.addWidget(self.label_index_image)
-        self.hbox_info.addWidget(self.nextButton)
+        self.hlayout_change_buttons = QHBoxLayout()
+        self.hlayout_change_buttons.addStretch(0)
+        self.hlayout_change_buttons.addWidget(self.prevButton)
+        self.hlayout_change_buttons.addWidget(self.label_index_image)
+        self.hlayout_change_buttons.addWidget(self.nextButton)
+        self.hlayout_change_buttons.addStretch(0)
+
+        # vlayout
+        self.vlayout_checkbox = QVBoxLayout()
+        self.vlayout_checkbox.addWidget(self.qcheckbox_show_filter)
+
+        self.vlayout_info_label = QVBoxLayout()
+        self.vlayout_info_label.addWidget(self.label_nb_line_detected)
+        self.vlayout_info_label.addWidget(self.label_average_line_detected)
+        self.vlayout_info_label.addWidget(self.label_percentage_black_white)
+        self.vlayout_info_label.addStretch(0)
+        self.qgroup_info.setLayout(self.vlayout_info_label)
+
+        self.vlayout_checkbox.addWidget(self.qgroup_info)
+        self.vlayout_checkbox.addStretch(0)
+
+        # hlayout
+        self.hlayout_display = QVBoxLayout()
+        self.hlayout_display.addWidget(self.label_image)
+        self.hlayout_display.addStretch(0)
+        self.hlayout_display.addLayout(self.hlayout_change_buttons)
 
         # gui layout
-        self.main_vlayout.addWidget(self.label_image)
-        self.main_vlayout.addLayout(self.hbox_info)
+        self.hlayout_main.addLayout(self.hlayout_display)
+        self.hlayout_main.addStretch(0)
+        self.hlayout_main.addLayout(self.vlayout_checkbox)
 
         # model
         self.dicomFilePath = None
@@ -178,7 +204,7 @@ class MainGui(QWidget):
 
         msg = QMessageBox(self)
         msg.setIcon(QMessageBox.Information)
-        msg.setText("Steam Account Manager is created by : \n Nathanael Ponceau")
+        msg.setText("Lung BLine detection is created by : \n Nathanael Ponceau")
         msg.layout().addWidget(mailLabel)
         msg.setWindowTitle("About")
         msg.setStandardButtons(QMessageBox.Ok)
