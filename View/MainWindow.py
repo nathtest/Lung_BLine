@@ -19,6 +19,10 @@ ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
 
 class MainWindow(QMainWindow):
+    """
+    This class contain the menu action and parameter for the main window.
+    Also it contain the main widget to be display inside the main window.
+    """
 
     def __init__(self):
         super().__init__()
@@ -71,6 +75,11 @@ class MainGui(QWidget):
     fileArray = pyqtSignal()
 
     def __init__(self, parent):
+        """
+        This class is the main widget containing displaying the lung scan.
+        It opens the DICOM files and apply the b line detection algorithm.
+        :param parent:
+        """
         super(MainGui, self).__init__(parent)
 
         # grid layout
