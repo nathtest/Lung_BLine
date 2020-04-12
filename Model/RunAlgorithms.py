@@ -16,7 +16,7 @@ class RunAlgorithms:
         bline_detect = BLineDetect(img)
         binary_mask = bline_detect.get_binary_mask()
         asf = ASF(binary_mask)
-        top_hat_filter = TopHatFilter(asf)
+        top_hat_filter = TopHatFilter(asf).get_top_hat()
 
         return top_hat_filter
 

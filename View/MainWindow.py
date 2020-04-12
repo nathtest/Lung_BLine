@@ -183,17 +183,26 @@ class MainGui(QWidget):
 
     @pyqtSlot(QModelIndex)
     def tree_open_file(self, index):
+        """
+        This function call the readDicomfile function when an element of the tree is double clicked.
+        """
         self.dicomFilePath = self.model.filePath(index)
         self.filePath.emit(str(self.dicomFilePath))
 
 
     def ComputeBlackWhitePixelRatio(self):
+        """
+         This function compute the black/white percent and update the label.
+        """
         ratio = ComputeBlackWhitePercent(self.selectedPixmap)
 
         ratio.getRatio()
         self.label_percentage_black_white.setText("Ratio of black/white : " + "{0:0.1f}".format(ratio.getRatio()) + " %")
 
     def selectionDone(self):
+        """
+        This function stop the selection when it's done.
+        """
         self.qcheckbox_show_filter.setDisabled(False)
 
         image = self.imageArray[self.image_index]
@@ -204,6 +213,9 @@ class MainGui(QWidget):
         self.selectedPixmap = pix.copy(self.label_image.rubberBand.geometry())
 
     def startSelection(self):
+        """
+        This function manage the start of the selected area.
+        """
 
         image = self.imageArray[self.image_index]
 
@@ -224,7 +236,7 @@ class MainGui(QWidget):
         if self.qcheckbox_show_filter.isChecked():
             # start bline detection and show bline
             run = RunAlgorithms()
-            result = run.runBlineDetection(self.selectedPixmap)
+            #result = run.runBlineDetection(self.selectedPixmap)
         else:
             # restore bline
             image = self.imageArray[self.image_index]
@@ -235,6 +247,9 @@ class MainGui(QWidget):
             self.label_image.setPixmap(pix)
 
     def openFile(self):
+        """
+        This function create a pop up window to select a file to open.
+        """
         fileName, _ = QFileDialog.getOpenFileName(None, "Open DICOM File",
                                                   directory=os.path.normpath(Path.home()), filter="*")
         if fileName:
@@ -243,7 +258,9 @@ class MainGui(QWidget):
 
     @pyqtSlot(str)
     def readDicomFile(self, dicom_filepath):
-
+        """
+        this function use the DICOMReader class to read a DICOm file.
+        """
         try:
             self.image_index = 0
             self.label_filepath.setText("Filepath : " + dicom_filepath)
@@ -262,6 +279,9 @@ class MainGui(QWidget):
 
     @pyqtSlot()
     def display_image(self, index=0):
+        """
+        Display selected image into the label.
+        """
         image = self.imageArray[index]
 
         image = QImage(image, image.shape[1], image.shape[0], QImage.Format_Indexed8)
@@ -272,6 +292,9 @@ class MainGui(QWidget):
 
     @pyqtSlot()
     def prev_image(self):
+        """
+        Display previous image
+        """
         if self.image_index > 0:
             self.image_index -= 1
             self.label_index_image.setText(str(self.image_index) + "/" + str(self.imageArray.shape[0]))
@@ -279,13 +302,13 @@ class MainGui(QWidget):
 
     @pyqtSlot()
     def next_image(self):
+        """
+        Display next image
+        """
         if self.image_index < self.imageArray.shape[0]:
             self.image_index += 1
             self.label_index_image.setText(str(self.image_index) + " / " + str(self.imageArray.shape[0]))
             self.display_image(self.image_index)
-
-    def black_white_percent(self):
-        pass
 
     def closeEvent(self, event):
         print("close event")
