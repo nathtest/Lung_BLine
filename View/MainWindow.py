@@ -3,15 +3,19 @@
 import os
 import sys
 import ctypes
+import copy
 from pathlib import Path
 
-from Model import DICOM_Reader
+from Model import DICOMReader
+from Model.ComputeBlackWhitePercent import ComputeBlackWhitePercent
+from View import QLabelSelectable
+from Model.RunAlgorithms import RunAlgorithms
 
 # Import the core and GUI elements of Qt
-from PyQt5.QtCore import QSize, pyqtSignal, pyqtSlot
+from PyQt5.QtCore import QSize, pyqtSignal, pyqtSlot, QModelIndex
 from PyQt5.QtGui import QIcon, QPixmap, QImage
 from PyQt5.QtWidgets import QMainWindow, QAction, QWidget, QVBoxLayout, QPushButton, QMessageBox, QLabel, \
-    QApplication, QFileDialog, QHBoxLayout, QCheckBox, QGroupBox, QTreeWidget
+    QApplication, QFileDialog, QHBoxLayout, QCheckBox, QGroupBox, QTreeWidget, QFileSystemModel, QTreeView
 
 # to allow windows icon task bar
 myappid = 'nath.app.LungBLine'  # arbitrary string
@@ -91,15 +95,18 @@ class MainGui(QWidget):
         self.prevButton.setDisabled(True)
         self.nextButton = QPushButton("Next")
         self.nextButton.setDisabled(True)
+        self.selectBlineAreaButton = QPushButton("Select Bline area ...")
+        self.selectBlineAreaButton.setDisabled(True)
 
         # qcheckbox
         self.qcheckbox_show_filter = QCheckBox("Show B line(s)")
+        self.qcheckbox_show_filter.setDisabled(True)
 
         # qgoup box
         self.qgroup_info = QGroupBox("Informations")
 
         # qlabel
-        self.label_image = QLabel(self)
+        self.label_image = QLabelSelectable.QLabelSelectable(self)
         self.label_image.setPixmap(QPixmap('Resource/no-image-icon.png').scaled(800, 600))
         self.label_image.setFixedSize(800, 600)
 
@@ -111,13 +118,25 @@ class MainGui(QWidget):
         self.label_filepath = QLabel("Filepath : ")
 
         # qtree widget
-        self.qtree_widget = QTreeWidget()
+        self.model = QFileSystemModel()
+        self.model.setRootPath(os.path.normpath(Path.home()))
+        self.tree = QTreeView()
+        self.tree.setModel(self.model)
+
+        self.tree.setAnimated(False)
+        self.tree.setIndentation(20)
+        self.tree.setSortingEnabled(True)
 
         # signal
         self.filePath.connect(self.readDicomFile)
         self.fileArray.connect(self.display_image)
         self.prevButton.clicked.connect(self.prev_image)
         self.nextButton.clicked.connect(self.next_image)
+        self.selectBlineAreaButton.clicked.connect(self.startSelection)
+        self.qcheckbox_show_filter.stateChanged.connect(self.startFiltering)
+        self.tree.doubleClicked.connect(self.tree_open_file)
+        self.label_image.selectionFinished.connect(self.selectionDone)
+        self.label_image.selectionFinished.connect(self.ComputeBlackWhitePixelRatio)
 
         # horizontal layout for loading info and go back button
         self.hlayout_change_buttons = QHBoxLayout()
@@ -129,6 +148,7 @@ class MainGui(QWidget):
 
         # vlayout
         self.vlayout_checkbox = QVBoxLayout()
+        self.vlayout_checkbox.addWidget(self.selectBlineAreaButton)
         self.vlayout_checkbox.addWidget(self.qcheckbox_show_filter)
 
         self.vlayout_info_label = QVBoxLayout()
@@ -149,7 +169,7 @@ class MainGui(QWidget):
         self.hlayout_display.addLayout(self.hlayout_change_buttons)
 
         # gui layout
-        self.hlayout_main.addWidget(self.qtree_widget)
+        self.hlayout_main.addWidget(self.tree)
         self.hlayout_main.addStretch(0)
         self.hlayout_main.addLayout(self.hlayout_display)
         self.hlayout_main.addStretch(0)
@@ -159,6 +179,60 @@ class MainGui(QWidget):
         self.dicomFilePath = None
         self.imageArray = None
         self.image_index = 0
+        self.selectedPixmap = None
+
+    @pyqtSlot(QModelIndex)
+    def tree_open_file(self, index):
+        self.dicomFilePath = self.model.filePath(index)
+        self.filePath.emit(str(self.dicomFilePath))
+
+
+    def ComputeBlackWhitePixelRatio(self):
+        ratio = ComputeBlackWhitePercent(self.selectedPixmap)
+
+        ratio.getRatio()
+        self.label_percentage_black_white.setText("Ratio of black/white : " + "{0:0.1f}".format(ratio.getRatio()) + " %")
+
+    def selectionDone(self):
+        self.qcheckbox_show_filter.setDisabled(False)
+
+        image = self.imageArray[self.image_index]
+
+        image = QImage(image, image.shape[1], image.shape[0], QImage.Format_Indexed8)
+        pix = QPixmap(image)
+
+        self.selectedPixmap = pix.copy(self.label_image.rubberBand.geometry())
+
+    def startSelection(self):
+
+        image = self.imageArray[self.image_index]
+
+        image = QImage(image, image.shape[1], image.shape[0], QImage.Format_Indexed8)
+        pix = QPixmap(image)
+
+        self.label_image.setPixmap(pix)
+
+        self.label_image.reset()
+
+        self.label_image.startSelection = True
+
+    def startFiltering(self):
+        """
+        This function is used to call filtering function when the bline area has been selected.
+        The variable to use is self.selectedPixmap
+        """
+        if self.qcheckbox_show_filter.isChecked():
+            # start bline detection and show bline
+            run = RunAlgorithms()
+            result = run.runBlineDetection(self.selectedPixmap)
+        else:
+            # restore bline
+            image = self.imageArray[self.image_index]
+
+            image = QImage(image, image.shape[1], image.shape[0], QImage.Format_Indexed8)
+            pix = QPixmap(image)
+
+            self.label_image.setPixmap(pix)
 
     def openFile(self):
         fileName, _ = QFileDialog.getOpenFileName(None, "Open DICOM File",
@@ -169,12 +243,22 @@ class MainGui(QWidget):
 
     @pyqtSlot(str)
     def readDicomFile(self, dicom_filepath):
-        reader = DICOM_Reader.DICOMReader(dicom_filepath, False)
 
-        self.imageArray = reader.get_images_array()
-        self.prevButton.setDisabled(False)
-        self.nextButton.setDisabled(False)
-        self.fileArray.emit()
+        try:
+            self.image_index = 0
+            self.label_filepath.setText("Filepath : " + dicom_filepath)
+            self.selectBlineAreaButton.setDisabled(False)
+
+
+            reader = DICOMReader.DICOMReader(dicom_filepath, False)
+
+            self.imageArray = reader.get_images_array()
+            self.prevButton.setDisabled(False)
+            self.nextButton.setDisabled(False)
+            self.fileArray.emit()
+        except Exception as e:
+            print(e)
+            self.errorDialog("DICOM File error", "The file you tried to open is not a DICOM file !")
 
     @pyqtSlot()
     def display_image(self, index=0):
@@ -199,6 +283,9 @@ class MainGui(QWidget):
             self.image_index += 1
             self.label_index_image.setText(str(self.image_index) + " / " + str(self.imageArray.shape[0]))
             self.display_image(self.image_index)
+
+    def black_white_percent(self):
+        pass
 
     def closeEvent(self, event):
         print("close event")
